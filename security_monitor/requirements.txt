@@ -1,0 +1,7 @@
+# Run this command to install all dependencies:
+#   pip install -r requirements.txt
+
+pyyaml>=6.0        # for reading settings.yaml
+
+# Windows only (comment out if you're on Linux):
+# pywin32>=306     # for reading Windows Event Log

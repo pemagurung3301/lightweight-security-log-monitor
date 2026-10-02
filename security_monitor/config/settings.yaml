@@ -1,0 +1,40 @@
+# ================================================================
+#  settings.yaml  –  Edit this file to customise your monitor
+# ================================================================
+
+# How often (in seconds) to check for new log entries
+check_interval_seconds: 10
+
+
+# ── Linux Settings ───────────────────────────────────────────
+linux:
+  # Path to the authentication log file
+  # Ubuntu/Debian: /var/log/auth.log
+  # CentOS/RHEL:   /var/log/secure
+  log_file: /var/log/auth.log
+
+
+# ── Threshold Rules (what counts as an attack?) ─────────────
+thresholds:
+  # BRUTE-FORCE RULE:
+  # If the same IP address fails to login more than X times
+  # within Y seconds → trigger an alert
+  failed_login_count: 5          # number of failures
+  failed_login_window_seconds: 180  # within 3 minutes
+
+
+# ── Email Alert Settings ─────────────────────────────────────
+email:
+  enabled: true
+  smtp_server: smtp.gmail.com
+  smtp_port: 587
+  sender_email: sushijuicy11@gmail.com    # ← change this
+  sender_password: YOUR_APP_PASSWORD    # ← use Gmail App Password
+  recipient_email: pemasherapgrg@gmail.com # ← who gets the alert
+
+
+# ── Telegram Alert Settings ──────────────────────────────────
+telegram:
+  enabled: true
+  bot_token: "8918463892:AAF5B2tllivUvm5oXhO-DjxXfcXvS8GuiUI"     # ← from @BotFather on Telegram
+  chat_id:   "YOUR_CHAT_ID"       # ← your Telegram chat ID

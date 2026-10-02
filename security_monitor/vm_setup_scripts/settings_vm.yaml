@@ -1,0 +1,27 @@
+# ================================================================
+#  settings.yaml  – VM TESTING VERSION
+#  Use this config when running inside your Ubuntu VM
+# ================================================================
+
+check_interval_seconds: 10
+
+linux:
+  # Real auth log on your Ubuntu VM (requires sudo)
+  log_file: /var/log/auth.log
+
+thresholds:
+  failed_login_count: 5
+  failed_login_window_seconds: 180
+
+email:
+  enabled: false           # Set to true once you add credentials
+  smtp_server: smtp.gmail.com
+  smtp_port: 587
+  sender_email: YOUR_EMAIL@gmail.com
+  sender_password: YOUR_APP_PASSWORD
+  recipient_email: YOUR_EMAIL@gmail.com
+
+telegram:
+  enabled: false           # Set to true once you add bot token
+  bot_token: "YOUR_BOT_TOKEN"
+  chat_id:   "YOUR_CHAT_ID"
