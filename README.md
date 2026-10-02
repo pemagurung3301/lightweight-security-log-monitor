@@ -2,88 +2,224 @@
 ### Final Year Project – Pema Sherap Gurung (NP070051)
 **CT098-3-2-RMCT | Technology Park Malaysia**
 
----
+Watches Linux (`/var/log/auth.log`) and Windows (Security Event Log, ID 4625)
+for **SSH / logon brute-force attacks** and sends real-time alerts by
+**Email**, **Telegram**, and to a local JSON evidence file.
 
-## What This Does
-Monitors Linux and Windows server logs for brute-force attacks.
-Sends real-time alerts via **Email** and **Telegram**.
-
----
-
-## Project Structure
-```
-security_monitor/
-├── monitor.py                ← MAIN script (run this)
-├── requirements.txt          ← Python libraries needed
-├── config/
-│   └── settings.yaml         ← YOUR settings (edit this first!)
-├── modules/
-│   ├── linux_parser.py       ← Reads /var/log/auth.log
-│   ├── windows_parser.py     ← Reads Windows Event Log
-│   ├── threshold_engine.py   ← Detects attack patterns
-│   ├── alerter.py            ← Sends Email + Telegram alerts
-│   └── config_loader.py      ← Reads settings.yaml
-├── tests/
-│   └── simulate_attack.py    ← Fake attack for testing
-└── logs/
-    └── test_auth.log         ← Created during testing
-```
+One Python process, one dependency (`pyyaml`), no database, no agents, no cloud —
+deliberately small enough for a small business to run and understand.
 
 ---
 
-## Setup (Step-by-Step)
+## Status
 
-### Step 1 – Install Python
-Download Python 3.10+ from https://python.org
+- ✅ **53 automated tests pass** — `python3 -m pytest tests/ -q`
+- ✅ End-to-end verified against a **live OpenSSH server** producing real
+  `Failed password` log lines (5 real failures → alert in 2 s)
+- ✅ Verified against the Windows Event 4625 field layout
+- ⚠️ The Windows code path could not be executed in the review environment
+  (Linux only) — see `docs/AUDIT.md` §2.5
 
-### Step 2 – Install dependencies
-Open a terminal in this folder and run:
+📄 **`docs/AUDIT.md`** — the full code review: **19 defects** in the first
+version, each one reproduced with the command that shows it, and what was changed.
+🎤 **`docs/SHOWCASE.md`** — how to demonstrate this on a real machine, CLI and GUI.
+
+---
+
+## Quick start (60 seconds, no server needed)
+
 ```bash
+cd security_monitor
 pip install -r requirements.txt
+bash vm_setup_scripts/6_demo.sh          # then open http://localhost:8080
 ```
 
-### Step 3 – Configure your settings
-Edit `config/settings.yaml`:
-- Set your Gmail address and App Password
-- Set your Telegram Bot token and Chat ID
-- Set the correct log file path for your Linux system
-
-### Step 4 – Test it works (without a real attack)
-In Terminal 1, change the log_file in settings.yaml to:
-  `log_file: logs/test_auth.log`
-
-Then run the monitor:
-```bash
-python3 monitor.py --os linux
-```
-
-In Terminal 2, run the simulator:
-```bash
-python3 tests/simulate_attack.py
-```
-
-Watch Terminal 1 – after 5 failures you should see an alert!
-
-### Step 5 – Run on a real Linux server
-Change log_file back to `/var/log/auth.log` then:
-```bash
-sudo python3 monitor.py --os linux
-```
-
-### Step 6 – Run on Windows
-```bash
-python monitor.py --os windows
-```
-(Must be run as Administrator)
+That runs a fake attacker against a demo log file and starts both the terminal
+monitor and the web dashboard. Nothing is sent anywhere.
 
 ---
 
-## How It Works
-1. The script reads new lines from the log file every 10 seconds
-2. Each line is parsed with regex to extract IP address and username
-3. The threshold engine counts failures per IP within a 3-minute window
-4. If an IP exceeds 5 failures → alert is sent via Email + Telegram
-5. The alert includes the attacker's IP, failure count, and timestamp
+## Running it for real
+
+### Linux
+```bash
+cd security_monitor
+pip install -r requirements.txt
+nano config/settings.yaml                # log_file + alert credentials
+sudo python3 -u monitor.py --os linux    # sudo: auth.log is root-readable
+```
+
+### Windows (run the terminal as Administrator)
+```powershell
+pip install -r requirements.txt          # installs pywin32 automatically
+python monitor.py --os windows --gui
+```
+
+### Every option
+```bash
+python3 monitor.py --help
+```
+
+| Flag | What it does |
+|------|--------------|
+| `--os linux\|windows\|auto` | Which log source to read (default: auto-detect) |
+| `--config PATH` | Use a different `settings.yaml` |
+| `--gui` | Start the web dashboard (default `0.0.0.0:8080`) |
+| `--gui-port N` | Dashboard port (`0` = pick a free one) |
+| `--replay FILE` | Replay a log file instead of tailing a live one |
+| `--replay-delay S` | Seconds between replayed events (default 1) |
+| `--test-alert` | Send one test alert through every channel, then exit |
+| `--once` | One pass and exit (used by the tests) |
+| `--quiet` | Print alerts only, not every failed login |
+
+---
+
+## Showing it to people
+
+**Terminal 1 — the monitor**
+```bash
+sudo python3 -u monitor.py --os linux --gui
+```
+**Terminal 2 — the attack** (from another machine, against the monitored one)
+```bash
+bash vm_setup_scripts/4_simulate_brute_force.sh <TARGET_IP>
+```
+No attacker tool? `python3 tests/simulate_attack.py` writes the same log lines
+sshd would, or `python3 monitor.py --replay tests/logs/test_auth.log` replays a
+recorded attack on any operating system.
+
+What the screen shows:
+```
+  [14:02:11] Failed login from 192.168.1.20 (username: root) – 1/5 in window
+  [14:02:12] Failed login from 192.168.1.20 (username: root) – 2/5 in window
+  ...
+  [14:02:16] Failed login from 192.168.1.20 (username: root) – 5/5 in window
+[!] ALERT: 🚨 BRUTE-FORCE ATTACK DETECTED
+IP Address : 192.168.1.20
+Failures   : 5 in 180 seconds
+Usernames  : root
+  [✓] Email alert sent to you@gmail.com
+  [✓] Telegram alert sent to chat 123456789
+```
+
+Full demo scripts, a viva question list and a pre-flight checklist are in
+**[`docs/SHOWCASE.md`](docs/SHOWCASE.md)**.
+
+---
+
+## Configuration — `config/settings.yaml`
+
+```yaml
+check_interval_seconds: 10      # how often to check the log
+alerts_dir: logs                # alerts.jsonl is written here
+
+linux:
+  log_file: /var/log/auth.log   # CentOS/RHEL: /var/log/secure
+
+thresholds:
+  failed_login_count: 5             # failures that trigger an alert
+  failed_login_window_seconds: 180  # …counted within this many seconds
+  alert_cooldown_seconds: 300       # silence per IP after an alert
+
+email:    { enabled: false, smtp_server: smtp.gmail.com, smtp_port: 587, ... }
+telegram: { enabled: false, ... }
+```
+
+### 🔑 Keep your secrets out of Git
+Environment variables override the YAML file, so the file can stay in the repo:
+
+```bash
+export SMTP_PASSWORD='xxxx xxxx xxxx xxxx'   # Gmail App Password
+export TELEGRAM_BOT_TOKEN='123456:ABC...'
+export TELEGRAM_CHAT_ID='123456789'
+```
+
+- Gmail App Password: Google Account → Security → 2-Step Verification → *App passwords*
+- Telegram: `@BotFather` → `/newbot` → copy the token; message your bot, then open
+  `https://api.telegram.org/bot<TOKEN>/getUpdates` and read `"chat":{"id":…}`
+- Check it works: `python3 monitor.py --test-alert`
+
+---
+
+## How it works
+
+```
+ /var/log/auth.log ─┐
+                    ├─► parser ──► threshold engine ──► alerter ──► email
+ Windows Security ──┘   (regex)     (sliding window)     │        └─► Telegram
+   log, Event 4625                                      └────────► alerts.jsonl
+                                        └────────────► dashboard (--gui)
+```
+
+1. The log file is **tailed** — only new bytes are read, every
+   `check_interval_seconds`. Rotation and truncation are detected so the monitor
+   never goes blind.
+2. Each line is matched against a regex to pull out the **username** and **source
+   IP** (IPv4 and IPv6). Only `Failed password` lines are counted — a real
+   OpenSSH server writes exactly one of those per rejected password, and counting
+   the surrounding `Invalid user` / `Connection closed` lines too would inflate
+   the counter and fire early.
+3. The **threshold engine** keeps a sliding window of timestamps per IP and
+   alerts when the count reaches `failed_login_count`.
+4. The **alerter** sends the alert and appends it to `logs/alerts.jsonl`.
+   A failing channel is reported, never fatal.
+5. With `--gui`, the engine's live state is served as a small web dashboard.
+
+---
+
+## Project structure
+
+```
+lightweight-security-log-monitor/
+├── README.md                     ← you are here
+├── .gitignore
+├── docs/
+│   ├── AUDIT.md                  ← code review: bugs found + fixes
+│   └── SHOWCASE.md               ← how to demo it (CLI + GUI, viva Q&A)
+└── security_monitor/
+    ├── monitor.py                ← MAIN script (run this)
+    ├── dashboard.py              ← web GUI (standard library only)
+    ├── requirements.txt
+    ├── config/
+    │   ├── settings.yaml         ← YOUR settings (edit this)
+    │   └── settings_demo.yaml    ← safe config used by the demo
+    ├── modules/
+    │   ├── linux_parser.py       ← tails /var/log/auth.log
+    │   ├── windows_parser.py     ← reads Windows Event Log (4625)
+    │   ├── threshold_engine.py   ← the detection brain
+    │   ├── alerter.py            ← email + Telegram + alerts.jsonl
+    │   └── config_loader.py      ← reads settings.yaml
+    ├── tests/
+    │   ├── test_*.py             ← 53 pytest tests
+    │   ├── simulate_attack.py    ← fake attack for demos
+    │   └── logs/test_auth.log    ← recorded attack, for --replay
+    ├── logs/                     ← alerts.jsonl lands here (gitignored)
+    └── vm_setup_scripts/         ← numbered setup + demo scripts
+```
+
+---
+
+## Tests
+
+```bash
+cd security_monitor
+pip install pytest
+python3 -m pytest tests/ -q          # 53 passed
+```
+
+They cover the parser against real sshd output (IPv6, rotation, truncation,
+binary junk, partial lines), the sliding window (firing, expiry, cooldown,
+memory sweep), the alerter (misconfiguration, escaping, no-crash guarantees),
+the dashboard endpoints, and the real `monitor.py` command line end to end.
+
+---
+
+## Known limitations
+
+Detection is notification-only (no automated blocking), threshold-based (an
+attacker who stays just under the limit is invisible), and scoped to SSH on
+Linux / Event 4625 on Windows. The full list, with reasoning, is in
+`docs/AUDIT.md` §6.
 
 ---
 
