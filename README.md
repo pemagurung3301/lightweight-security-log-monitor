@@ -1,6 +1,5 @@
 # Lightweight Security Log Monitor
-### Final Year Project – Pema Sherap Gurung (NP070051)
-**CT098-3-2-RMCT | Technology Park Malaysia**
+### Final Year Project – Pema Sherap Gurung
 
 Watches Linux (`/var/log/auth.log`) and Windows (Security Event Log, ID 4625)
 for **SSH / logon brute-force attacks** and sends real-time alerts by
@@ -13,16 +12,16 @@ deliberately small enough for a small business to run and understand.
 
 ## Status
 
-- ✅ **53 automated tests pass** — `python3 -m pytest tests/ -q`
-- ✅ End-to-end verified against a **live OpenSSH server** producing real
+- **53 automated tests pass** — `python3 -m pytest tests/ -q`
+- End-to-end verified against a **live OpenSSH server** producing real
   `Failed password` log lines (5 real failures → alert in 2 s)
-- ✅ Verified against the Windows Event 4625 field layout
-- ⚠️ The Windows code path could not be executed in the review environment
+- Verified against the Windows Event 4625 field layout
+- The Windows code path could not be executed in the review environment
   (Linux only) — see `docs/AUDIT.md` §2.5
 
-📄 **`docs/AUDIT.md`** — the full code review: **19 defects** in the first
+**`docs/AUDIT.md`** — the full code review: **19 defects** in the first
 version, each one reproduced with the command that shows it, and what was changed.
-🎤 **`docs/SHOWCASE.md`** — how to demonstrate this on a real machine, CLI and GUI.
+**`docs/SHOWCASE.md`** — how to demonstrate this on a real machine, CLI and GUI.
 
 ---
 
