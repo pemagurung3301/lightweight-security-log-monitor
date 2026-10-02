@@ -1,0 +1,21 @@
+# ================================================================
+#  settings_demo.yaml – SAFE DEMO CONFIG
+#  Used by vm_setup_scripts/6_demo.sh. Nothing here is real:
+#  it watches a demo log file inside the project and sends no email.
+# ================================================================
+
+check_interval_seconds: 2          # check twice as often so the demo feels live
+alerts_dir: logs
+
+linux:
+  log_file: logs/demo_auth.log     # created by the demo script
+
+thresholds:
+  failed_login_count: 5
+  failed_login_window_seconds: 180
+  alert_cooldown_seconds: 300
+
+email:
+  enabled: false
+telegram:
+  enabled: false

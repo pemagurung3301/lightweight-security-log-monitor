@@ -1,7 +1,13 @@
-# Run this command to install all dependencies:
+# Python libraries needed by the Lightweight Security Log Monitor
+#
 #   pip install -r requirements.txt
+#
+# The Windows line only installs on Windows (that is what the
+# "; sys_platform == "win32"" marker means), so the same file works
+# on both operating systems.
 
-pyyaml>=6.0        # for reading settings.yaml
+pyyaml>=6.0                                 # read settings.yaml
+pywin32>=306 ; sys_platform == "win32"      # read the Windows Event Log
 
-# Windows only (comment out if you're on Linux):
-# pywin32>=306     # for reading Windows Event Log
+# Only needed if you want to run the test suite:
+# pytest>=7.0
